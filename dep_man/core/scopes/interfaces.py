@@ -1,0 +1,115 @@
+"""Bases scope class."""
+
+from __future__ import annotations
+
+from abc import ABC, abstractmethod
+from typing import TYPE_CHECKING, Any, overload
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+    from types import MappingProxyType
+
+    from typing_extensions import Self
+
+    from dep_man.core.schemas import Dependency
+    from dep_man.types import ExecutorType, P, R, ScopeNameType, T
+
+
+class IScope(ABC):
+    """Class for scope management."""
+
+    __executor__: ExecutorType
+    """Provider executor."""
+
+    name: ScopeNameType
+    """Scope name"""
+    include: tuple[ScopeNameType, ...]
+    """External scopes names for include dependencies in current scope"""
+
+    @classmethod
+    @abstractmethod
+    def create(
+        cls,
+        name: ScopeNameType,
+        include: tuple[ScopeNameType, ...] = (),
+        *,
+        __executor__: ExecutorType,
+        **_kwargs: Any,
+    ) -> Self:
+        """Create scope instance.
+
+        Args:
+            name: Scope name
+            include: External scopes names for include dependencies in current scope
+            __executor__: Provider executor
+            **kwargs: other kwargs
+
+        Returns: Scope instance
+
+        """
+
+    @abstractmethod
+    def collect(self) -> None:
+        """Collect scope providers."""
+
+    @overload
+    @abstractmethod
+    def provide(
+        self,
+        provider: type[T],
+        /,
+        export: bool = False,
+        interface: type | None = None,
+    ) -> type[T]: ...
+    @overload
+    @abstractmethod
+    def provide(
+        self,
+        provider: Callable[P, R],
+        /,
+        export: bool = False,
+        interface: Callable[P, R] | None = None,
+    ) -> Callable[P, R]: ...
+    @abstractmethod
+    def provide(
+        self,
+        provider: type[T] | Callable[P, R],
+        /,
+        export: bool = False,
+        interface: type | Callable[P, R] | None = None,
+    ) -> type[T] | Callable[P, R]:
+        """Provide function or cls object in scope.
+
+        Args:
+            provider: Class or function object.
+            export: Export providers to other scopes.
+            interface: Interface for mapping.
+
+        Returns: Passed class or function object.
+
+        """
+
+    @property
+    @abstractmethod
+    def internal_providers(self) -> MappingProxyType[str, type | Callable]:
+        """Internal providers mapping."""
+
+    @property
+    @abstractmethod
+    def external_providers(self) -> MappingProxyType[str, type | Callable]:
+        """External providers mapping."""
+
+    @property
+    @abstractmethod
+    def dependencies(self) -> MappingProxyType[str, Dependency]:
+        """Scope dependencies."""
+
+    @property
+    @abstractmethod
+    def interfaces(self) -> MappingProxyType[str, Dependency]:
+        """Scope dependencies interfaces."""
+
+    @property
+    @abstractmethod
+    def kwargs(self) -> MappingProxyType[str, Any]:
+        """Other kwargs."""
