@@ -93,7 +93,7 @@ def _parse_provider_name_from_real_annotation(annotation: Any):
 
 
 def parse_provider_name_from_annotation(annotation: Any) -> None | str:
-    """Farse provider name from annotation.
+    """Parse provider name from annotation.
 
     Args:
         annotation: Any annotation param annotation.
