@@ -9,6 +9,9 @@ __all__ = [
     "BaseDependencyManager",
     "Scope",
     "Injector",
+    "Depend",
+    "FDepend",
+    "BIND",
 ]
 
 from dep_man.core.injectors import Injector
@@ -17,6 +20,7 @@ from dep_man.core.scopes import Scope
 from dep_man.integrations.django import get_django_middleware
 from dep_man.integrations.starlette import get_starlette_middleware
 
+from .types import BIND, Depend, FDepend
 from .version import VERSION
 
 __version__ = VERSION
