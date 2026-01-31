@@ -5,7 +5,7 @@ build-backend = 'hatchling.build'
 
 [project]
 name = "dep-man"
-description = 'Dep Man is a dependency manager library with dependency injection implementation and future annotations supporting for avoiding circular imports.'
+description = 'Dep man is a dependency manager library with dependency injection implementation and future annotations supporting for avoiding circular imports.'
 requires-python = ">=3.10"
 authors = [
     { name = 'Abbakumov Valerii', email = 'tehnolog1999@gmail.com' },
@@ -64,6 +64,7 @@ Changelog = "https://github.com/extralait-web/dep-man/blob/master/CHANGELOG.md"
 dev = [
     'coverage[toml]',
     'pytest',
+    'pytest-asyncio',
     'pytest-cov',
     'pytest-mock',
     'pytest-dotenv',
@@ -210,6 +211,7 @@ exclude_lines = [
 pythonVersion = '3.10'
 include = ['dep_man']
 enableExperimentalFeatures = true
+reportRedeclaration = false
 venvPath = '.'
 venv = '.venv'
 
