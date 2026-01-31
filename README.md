@@ -14,14 +14,14 @@
 <a href="https://coverage-badge.samuelcolvin.workers.dev/redirect/extralait-web/dep-man" target="_blank">
     <img src="https://coverage-badge.samuelcolvin.workers.dev/extralait-web/dep-man.svg" alt="Coverage">
 </a>
-<a href="https://pypi.python.org/pypi/dep-man" target="_blank">
-    <img src="https://img.shields.io/pypi/v/dep-man.svg" alt="pypi">
+<a href="https://pypi.python.org/pypi/dep-man-pydi" target="_blank">
+    <img src="https://img.shields.io/pypi/v/dep-man-pydi.svg" alt="pypi">
 </a>
-<a href="https://pepy.tech/project/dep-man" target="_blank">
+<a href="https://pepy.tech/project/dep-man-pydi" target="_blank">
     <img src="https://static.pepy.tech/badge/dep-man/month" alt="downloads">
 </a>
 <a href="https://github.com/extralait-web/dep-man" target="_blank">
-    <img src="https://img.shields.io/pypi/pyversions/dep-man.svg" alt="versions">
+    <img src="https://img.shields.io/pypi/pyversions/dep-man-pydi.svg" alt="versions">
 </a>
 <a href="https://github.com/extralait-web/dep-man" target="_blank">
     <img src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/extralait-web/dep-man/master/docs/badge/alfa.json" alt="Web SDK alfa">
