@@ -112,7 +112,7 @@ class BaseDependencyManager(IDependencyManager[TScope, TInjector], Generic[TScop
         cls.__loaded__ = True
 
     @classmethod
-    def init(cls, globalize: bool | tuple[ScopeNameType] = False, reinit: bool = False):
+    def init(cls, globalize: bool | tuple[ScopeNameType, ...] = False, reinit: bool = False):
         """Init dependency manager context.
 
         Args:
