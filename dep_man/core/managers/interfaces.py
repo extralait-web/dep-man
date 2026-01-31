@@ -12,7 +12,7 @@ from dep_man.core.injectors import TInjector
 from dep_man.core.scopes import TScope
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Iterable
+    from collections.abc import Callable
 
     from dep_man.types import P, ProvidersType, R, ScopeNameType, T
     from dep_man.utils.contextvar import SimpleContext
@@ -50,14 +50,14 @@ class IDependencyManager(ABC, Generic[TScope, TInjector]):
     @abstractmethod
     def load(
         cls,
-        packages: Iterable[str] = (),
+        *packages: str,
         file_name: str = DEFAULT_DEPENDENCIES_FILE_NAME,
         reload: bool = False,
     ):
         """Load dependencies.
 
         Args:
-            packages: List of package names like [ext_dev.directory]
+            *packages: Tuple of package names like [ext_dev.directory]
             file_name: File name with providing dependencies by default it's "dependencies"
             reload: Reload dependencies.
 

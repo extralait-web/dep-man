@@ -28,17 +28,33 @@
 
 </p>
 
-[//]: # ([![llms.txt]&#40;https://img.shields.io/badge/llms.txt-green&#41;]&#40;https://docs.pydantic.dev/latest/llms.txt&#41;)
-
-[//]: # ([![CondaForge]&#40;https://img.shields.io/conda/v/conda-forge/dep-man.svg&#41;]&#40;https://anaconda.org/conda-forge/dep-man&#41;)
-
-## Installation
+# Installation
 
 Install using `pip install dep-man` or `uv add dep-man`
 
-## Features
+# Features
 
-- [x] Session grouped providers
-- [x] Annotation like providers inject
-- [x] Future annotations support
+- [x] Annotation like providers injection
+- [x] Future annotation support
+- [x] Class instances injection
+- [x] Sync and Async function result injection
+- [x] Nested providers for inject in classes attrs and function args
+- [x] Classes providers inheritance
+- [x] ContextVar based injection
+- [x] Scopes with grouped providers
+- [x] Export providers in other scopes
+- [x] Interfaces and protocol based injection from different scopes
+- [x] Sync and Async context manager like injection
+- [x] Nested context managers usage
+- [x] Global context for avoiding context manager usage
+- [x] Decoration like scopes injection for functions
+- [x] Decoration like injection for classes
+- [x] Middlewares for django and starlette
 - [x] Multi DI managers supporting
+- [x] Supported custom DI managers, scopes and injectors classes
+
+# Examples
+
+```py
+# docs/examples/home/minimal/usage.py
+```
