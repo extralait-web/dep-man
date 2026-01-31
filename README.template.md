@@ -30,7 +30,7 @@
 
 # Installation
 
-Install using `pip install dep-man` or `uv add dep-man`
+Install using `pip install dep-man-pdi` or `uv add dep-man-pdi`
 
 # Features
 
