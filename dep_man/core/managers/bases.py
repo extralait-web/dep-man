@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable, Iterable
+from collections.abc import Callable
 from typing import Generic, cast, get_args, get_origin, overload
 
 from typing_extensions import Self
@@ -86,14 +86,14 @@ class BaseDependencyManager(IDependencyManager[TScope, TInjector], Generic[TScop
     @classmethod
     def load(
         cls,
-        packages: Iterable[str] = (),
+        *packages: str,
         file_name: str | None = DEFAULT_DEPENDENCIES_FILE_NAME,
         reload: bool = False,
     ):
         """Load dependencies.
 
         Args:
-            packages: List of package names like [ext_dev.directory]
+            *packages: Tuple of package names like [ext_dev.directory]
             file_name: File name with providing dependencies by default it's "dependencies"
             reload: Reload dependencies.
 

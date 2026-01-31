@@ -26,7 +26,7 @@ def manager(mocker, request) -> type[DependencyManager]:
         for module in modules_to_delete:
             del sys.modules[module]
 
-    manager.load(packages, file_name=file_name, reload=reload)
+    manager.load(*packages, file_name=file_name, reload=reload)
     if init:
         manager.init(globalize, reinit=reinit)
     return manager
