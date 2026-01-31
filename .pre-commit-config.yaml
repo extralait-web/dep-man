@@ -16,10 +16,6 @@ repos:
         additional_dependencies:
           - tomli
         exclude: '^uv\.lock$'
-  - repo: https://github.com/google/yamlfmt
-    rev: v0.20.0
-    hooks:
-      - id: yamlfmt
   - repo: local
     hooks:
       - id: lint
