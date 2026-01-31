@@ -11,15 +11,16 @@ if TYPE_CHECKING:
 
     from typing_extensions import Self
 
-    from dep_man.core.schemas import Dependency
-    from dep_man.types import ExecutorType, P, R, ScopeNameType, T
+    from dep_man.types import P, PExecutor, ProvidersType, R, ScopeNameType, T
 
 
 class IScope(ABC):
     """Class for scope management."""
 
-    __executor__: ExecutorType
+    __executor__: PExecutor
     """Provider executor."""
+    __resolve_cache__: ProvidersType | None
+    """Provider cache."""
 
     name: ScopeNameType
     """Scope name"""
@@ -33,7 +34,7 @@ class IScope(ABC):
         name: ScopeNameType,
         include: tuple[ScopeNameType, ...] = (),
         *,
-        __executor__: ExecutorType,
+        __executor__: PExecutor,
         **_kwargs: Any,
     ) -> Self:
         """Create scope instance.
@@ -98,18 +99,3 @@ class IScope(ABC):
     @abstractmethod
     def external_providers(self) -> MappingProxyType[str, type | Callable]:
         """External providers mapping."""
-
-    @property
-    @abstractmethod
-    def dependencies(self) -> MappingProxyType[str, Dependency]:
-        """Scope dependencies."""
-
-    @property
-    @abstractmethod
-    def interfaces(self) -> MappingProxyType[str, Dependency]:
-        """Scope dependencies interfaces."""
-
-    @property
-    @abstractmethod
-    def kwargs(self) -> MappingProxyType[str, Any]:
-        """Other kwargs."""

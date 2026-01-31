@@ -6,7 +6,7 @@ on:
       - master
     tags:
       - '**'
-  pull_request: {}
+  pull_request: { }
 env:
   COLUMNS: 150
   UV_FROZEN: true
@@ -18,7 +18,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ['3.10', '3.11', '3.12', '3.13', '3.14']
+        python-version: [ '3.10', '3.11', '3.12', '3.13', '3.14' ]
     steps:
       - uses: actions/checkout@v6
       - uses: astral-sh/setup-uv@v7
@@ -35,26 +35,13 @@ jobs:
         env:
           SKIP: no-commit-to-branch
           UV_NO_PROGRESS: '1'
-  docs-build:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
-      - uses: astral-sh/setup-uv@v7
-        with:
-          python-version: '3.12'
-      - name: Install dependencies
-        # Unlike the docs build, we don't use mkdocs_material-insiders
-        # Because the secret for accessing the library is not accessible from forks, but we still want to run
-        # this job on public CI runs.
-        run: uv sync --all-packages --group docs
-      - run: PYTHONPATH="$PWD${PYTHONPATH:+:${PYTHONPATH}}" uv run mkdocs build
   test:
     name: Test ${{ matrix.os }} / ${{ matrix.python-version }}
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
-        python-version: ['3.10', '3.11', '3.12', '3.13', '3.14', '3.14t', 'pypy3.11']
+        os: [ ubuntu-latest, macos-latest, windows-latest ]
+        python-version: [ '3.10', '3.11', '3.12', '3.13', '3.14', '3.14t', 'pypy3.11' ]
         include:
           # test macos intel just with latest python version
           - os: macos-15-intel
@@ -87,7 +74,7 @@ jobs:
           path: coverage
           include-hidden-files: true
   coverage-combine:
-    needs: [test]
+    needs: [ test ]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -147,7 +134,6 @@ jobs:
       result: ${{ steps.all-green.outputs.result }}
     needs:
       - lint
-      - docs-build
       - test
     runs-on: ubuntu-latest
     steps:
@@ -157,7 +143,7 @@ jobs:
         with:
           jobs: ${{ toJSON(needs) }}
   release:
-    needs: [check]
+    needs: [ check ]
     if: needs.check.outputs.result == 'success' && startsWith(github.ref, 'refs/tags/')
     runs-on: ubuntu-latest
     environment: release

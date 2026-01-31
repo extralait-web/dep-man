@@ -3,7 +3,7 @@
   <img src="docs/resources/brand.svg" width="100%" alt="Web SDK">
 </p>
 <p align="center">
-    <em>Dep Man is a dependency manager library with dependency injection implementation and future annotations supporting for avoiding circular imports.</em>
+    <em>Dep man is a dependency manager library with dependency injection implementation and future annotations supporting for avoiding circular imports.</em>
 </p>
 
 <p align="center">
@@ -42,4 +42,4 @@ Install using `pip install dep-man` or `uv add dep-man`
 - [x] Session grouped providers
 - [x] Annotation like providers inject
 - [x] Future annotations support
-- [x] Multi DI managers supporting 
+- [x] Multi DI managers supporting

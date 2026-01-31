@@ -3,9 +3,9 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, ClassVar, Generic, overload
+from typing import TYPE_CHECKING, Any, ClassVar, Generic, overload
 
-from typing_extensions import Self
+from typing_extensions import Self, TypedDict
 
 from dep_man.consts import DEFAULT_DEPENDENCIES_FILE_NAME
 from dep_man.core.injectors import TInjector
@@ -18,9 +18,20 @@ if TYPE_CHECKING:
     from dep_man.utils.contextvar import SimpleContext
 
 
+class InitCache(TypedDict):
+    """Cache of init method call."""
+
+    providers: ProvidersType
+    globalize: bool | tuple[ScopeNameType]
+
+
 class IDependencyManager(ABC, Generic[TScope, TInjector]):
     """DI manager interface."""
 
+    __loaded__: ClassVar[bool]
+    """Is manager loaded"""
+    __inited__: ClassVar[bool]
+    """Is manager inited"""
     __forks_count__: ClassVar[int]
     """Dependency manager forks."""
     __context__: ClassVar[SimpleContext[ProvidersType]]
@@ -37,22 +48,29 @@ class IDependencyManager(ABC, Generic[TScope, TInjector]):
 
     @classmethod
     @abstractmethod
-    def load(cls, packages: Iterable[str], file_name: str = DEFAULT_DEPENDENCIES_FILE_NAME):
+    def load(
+        cls,
+        packages: Iterable[str] = (),
+        file_name: str = DEFAULT_DEPENDENCIES_FILE_NAME,
+        reload: bool = False,
+    ):
         """Load dependencies.
 
         Args:
             packages: List of package names like [ext_dev.directory]
             file_name: File name with providing dependencies by default it's "dependencies"
+            reload: Reload dependencies.
 
         """
 
     @classmethod
     @abstractmethod
-    def init(cls, globalize: bool | Iterable[ScopeNameType] = False):
+    def init(cls, globalize: bool | tuple[ScopeNameType] = False, reinit: bool = False):
         """Init dependency manager context.
 
         Args:
-            globalize: add all or certain scopes providers in global context for using providers without context managers
+            globalize: Add all or certain scopes providers in global context for using providers without context managers
+            reinit: Reinit manager context
 
         """
 
@@ -69,7 +87,7 @@ class IDependencyManager(ABC, Generic[TScope, TInjector]):
         Args:
             name: Scope name
             include: Include dependencies from other scopes
-            **kwargs: other kwargs
+            **kwargs: Other kwargs
 
         """
 
@@ -93,7 +111,6 @@ class IDependencyManager(ABC, Generic[TScope, TInjector]):
         provider: type[T],
         /,
         scope: ScopeNameType | None = None,
-        scopes: tuple[ScopeNameType, ...] = (),
         export: bool = False,
         interface: type | None = None,
     ) -> type[T]: ...
@@ -105,7 +122,6 @@ class IDependencyManager(ABC, Generic[TScope, TInjector]):
         provider: Callable[P, R],
         /,
         scope: ScopeNameType | None = None,
-        scopes: tuple[ScopeNameType, ...] = (),
         export: bool = False,
         interface: Callable[P, R] | None = None,
     ) -> Callable[P, R]: ...
@@ -116,7 +132,6 @@ class IDependencyManager(ABC, Generic[TScope, TInjector]):
         provider: type[T] | Callable[P, R],
         /,
         scope: ScopeNameType | None = None,
-        scopes: tuple[ScopeNameType, ...] = (),
         export: bool = False,
         interface: type | Callable[P, R] | None = None,
     ) -> type[T] | Callable[P, R]:
@@ -125,7 +140,6 @@ class IDependencyManager(ABC, Generic[TScope, TInjector]):
         Args:
             provider: Class or function object.
             scope: dependency storage scope
-            scopes: dependency storage scopes
             export: Export providers to other scopes.
             interface: Interface for mapping.
 
@@ -162,11 +176,12 @@ class IDependencyManager(ABC, Generic[TScope, TInjector]):
 
     @classmethod
     @abstractmethod
-    def execute_provider(cls, name: str):
+    def execute_provider(cls, name: str, scope: ScopeNameType | None = None) -> Any:
         """Execute provider with given name and return result.
 
         Args:
             name: provider name
+            scope: provider scope name
 
         Returns: provider call result.
 

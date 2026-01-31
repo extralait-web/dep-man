@@ -10,14 +10,14 @@ from typing_extensions import Self
 
 from dep_man.core.exceptions import ClassBaseInjectionContextDoesNotSupport
 from dep_man.core.mocker import mock_provider
-from dep_man.utils.contextvar import SimpleContext, SimpleContextManager
 
 from .interfaces import IInjector
 
 if TYPE_CHECKING:
     from collections.abc import Awaitable, Callable
 
-    from dep_man.types import ExecutorType, P, ProvidersType, R, T
+    from dep_man.types import P, PExecutor, ProvidersType, R, T
+    from dep_man.utils.contextvar import SimpleContext
 
 
 class Injector(IInjector):
@@ -32,7 +32,7 @@ class Injector(IInjector):
         self,
         providers: dict[str, Callable | type] | None,
         *,
-        __executor__: ExecutorType,
+        __executor__: PExecutor,
         __context__: SimpleContext[ProvidersType],
     ):
         """Set current providers.
@@ -78,8 +78,8 @@ class Injector(IInjector):
     def __enter__(self):
         """Enter to context."""
         _current_providers = self.__context__.value
-        _providers = {**(self._providers or {}), **_current_providers}
-        _manager = SimpleContextManager(self.__context__, _providers)
+        _providers = {**_current_providers, **(self._providers or {})}
+        _manager = self.__context__.manager(_providers)
         _manager.__enter__()
         self.__exit = _manager.__exit__
 
@@ -102,7 +102,7 @@ class Injector(IInjector):
         cls,
         providers: dict[str, Callable | type] | None,
         *,
-        __executor__: ExecutorType,
+        __executor__: PExecutor,
         __context__: SimpleContext[ProvidersType],
     ) -> Self:
         """Create injector instance.

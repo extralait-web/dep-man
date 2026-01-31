@@ -9,7 +9,7 @@ def add_parameters(signature: inspect.Signature, *parameter: inspect.Parameter) 
     """Add parameter to signature."""
     parameters = list(signature.parameters.values())
     parameters.extend(parameter)
-    return signature.replace(parameters=parameters, return_annotation=signature.return_annotation)
+    return signature.replace(parameters=parameters)
 
 
 def set_signature(function: types.FunctionType | Callable, signature: inspect.Signature):

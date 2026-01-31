@@ -1,10 +1,11 @@
 """Module types."""
 
+import sys
 from collections.abc import Callable
 from enum import Enum
 from typing import TYPE_CHECKING, Annotated, Any, TypeAlias
 
-from typing_extensions import ParamSpec, TypeVar
+from typing_extensions import ParamSpec, Protocol, TypeVar
 
 T = TypeVar("T")
 F = TypeVar("F")
@@ -33,10 +34,13 @@ else:
 
         def __class_getitem__(cls, params):
             """Proxy call in Annotated.__class_getitem__ with special type in metadata."""
-            return Annotated.__class_getitem__((*params, __FDependType__))  # type: ignore
+            params = (*params, __FDependType__)
+            if sys.version_info < (3, 13):
+                return Annotated.__class_getitem__(params)  # type: ignore
+            return Annotated.__getitem__(params)
 
 
-class BIND:  # pyright: ignore[reportRedeclaration]
+class BIND:  # pyright: ignore [reportRedeclaration]
     """Class for using in function defaults."""
 
 
@@ -46,8 +50,12 @@ BIND: Any
 ScopeNameType: TypeAlias = str | Enum
 """Scope name type"""
 
-ExecutorType: TypeAlias = Callable[[str], Any]
-"""Provider executor type alias"""
-
 ProvidersType: TypeAlias = dict[str, type | Callable]
 """Provider container type alias"""
+
+
+class PExecutor(Protocol):
+    """Provider executor type alias."""
+
+    def __call__(self, name: str, scope: ScopeNameType | None = None) -> Any:
+        """Method call."""

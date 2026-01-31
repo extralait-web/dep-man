@@ -48,7 +48,7 @@ class InterfaceAlreadyExistsException(_ScopeItemException):
     __attr_name__: str = "Interface"
 
 
-class InterfaceNameOverlapWithProvidersException(KeyError, ExceptionModel):
+class InterfaceNameOverlapWithProviderException(KeyError, ExceptionModel):
     """Raised when interface name present in certain scope dependencies."""
 
     name: str
@@ -85,12 +85,13 @@ class ScopeTypeNotSetException(ValueError, ExceptionModel):
     __template__ = "Scope type not passed in Generic arg for BaseDependencyManager in {manager} class declaration"
 
 
-class ProviderDoesNotExistsInManagerContextException(KeyError, ExceptionModel):
-    """Raised when a provider not present in context."""
+class ProviderDoesNotExistsInContextException(KeyError, ExceptionModel):
+    """Raised when a provider not present in context or scope."""
 
     name: str
+    scope: str
 
-    __template__ = "Provider {name} does not exist in context."
+    __template__ = "Provider {name} does not exist in context and scope {scope}."
 
 
 class ClassBaseInjectionContextDoesNotSupport(ValueError, ExceptionModel):
@@ -104,9 +105,30 @@ class ClassBaseInjectionContextDoesNotSupport(ValueError, ExceptionModel):
     )
 
 
-class FunctionProviderAlreadyMockedException(ValueError, ExceptionModel):
-    """Raised when a provider already mocked."""
+class ProviderAlreadyProvidedException(ValueError, ExceptionModel):
+    """Raised when a provider already provided."""
 
     name: str
 
-    __template__ = "Function provider {name} already mocked."
+    __template__ = "Provider {name} already provided."
+
+
+class DependencyManagerAlreadyLoaded(RuntimeError, ExceptionModel):
+    """Raised when a call load method of DependencyManager on loaded manager without reload flag."""
+
+    name: str
+
+    __template__ = (
+        "Dependency manager {name} already loaded. If you really need reload all dependencies use reload=True."
+    )
+
+
+class DependencyManagerAlreadyInited(RuntimeError, ExceptionModel):
+    """Raised when a call init method of DependencyManager on inited manager without reinit flag and different globalize."""
+
+    name: str
+
+    __template__ = (
+        "Dependency manager {name} already inited but globalize value was changed. "
+        "If you really need reinit manager context use reinit=True."
+    )

@@ -10,16 +10,17 @@ from typing_extensions import Self
 from dep_man.consts import DEFAULT_DEPENDENCIES_FILE_NAME
 from dep_man.core.exceptions import (
     ClassBaseInjectionContextDoesNotSupport,
-    ProviderDoesNotExistsInManagerContextException,
+    DependencyManagerAlreadyInited,
+    DependencyManagerAlreadyLoaded,
+    ProviderDoesNotExistsInContextException,
     ScopeAlreadyExistsException,
     ScopeDoesNotExistsException,
-    ScopeTypeNotSetException,
     WrongInjectorTypeException,
     WrongScopeTypeException,
 )
 from dep_man.core.injectors import TInjector
 from dep_man.core.injectors.interfaces import IInjector
-from dep_man.core.managers.interfaces import IDependencyManager
+from dep_man.core.managers.interfaces import IDependencyManager, InitCache
 from dep_man.core.scopes import TScope
 from dep_man.core.scopes.interfaces import IScope
 from dep_man.types import P, ProvidersType, R, ScopeNameType, T
@@ -33,6 +34,10 @@ class BaseDependencyManager(IDependencyManager[TScope, TInjector], Generic[TScop
         """Set new __scopes__ object and __scope_type__."""
         super().__init_subclass__()
 
+        # set state
+        cls.__loaded__ = False
+        cls.__inited__ = False
+        cls.__init_cache__ = InitCache(providers={}, globalize=False)
         # set new forks
         cls.__forks_count__ = 0
         # set new scopes
@@ -41,7 +46,7 @@ class BaseDependencyManager(IDependencyManager[TScope, TInjector], Generic[TScop
         cls.__context__ = SimpleContext[ProvidersType](default_factory=dict)
 
         # if __scope_type__ already set just return
-        if hasattr(cls, "__scope_type__"):
+        if hasattr(cls, "__scope_type__") and hasattr(cls, "__injector_type__"):
             return
 
         # iter by __orig_bases__
@@ -56,13 +61,7 @@ class BaseDependencyManager(IDependencyManager[TScope, TInjector], Generic[TScop
             return
 
         # if generic args was not passed check __base__ class
-        if cls.__base__ is BaseDependencyManager:
-            cls.__save_generic_args__(())  # type: ignore
-            # exit from function
-            return
-
-        # in other cases raise exception
-        raise ScopeTypeNotSetException(manager=cls.__name__)
+        cls.__save_generic_args__(())  # type: ignore
 
     @classmethod
     def __save_generic_args__(cls, args: tuple[type, ...]):
@@ -79,24 +78,29 @@ class BaseDependencyManager(IDependencyManager[TScope, TInjector], Generic[TScop
 
         cls.__injector_type__ = injector_type  # pyright: ignore [reportAttributeAccessIssue]
 
-    @staticmethod
-    def _import_module(module_name: str):
+    @classmethod
+    def _import_module(cls, module_name: str):
         """Import module for initialize module providers."""
-        try:
-            __import__(module_name)
-        except ImportError as exc:
-            if exc.name != module_name:
-                raise exc
+        __import__(module_name)
 
     @classmethod
-    def load(cls, packages: Iterable[str], file_name: str | None = DEFAULT_DEPENDENCIES_FILE_NAME):
+    def load(
+        cls,
+        packages: Iterable[str] = (),
+        file_name: str | None = DEFAULT_DEPENDENCIES_FILE_NAME,
+        reload: bool = False,
+    ):
         """Load dependencies.
 
         Args:
             packages: List of package names like [ext_dev.directory]
             file_name: File name with providing dependencies by default it's "dependencies"
+            reload: Reload dependencies.
 
         """
+        if cls.__loaded__ and not reload:
+            raise DependencyManagerAlreadyLoaded(name=cls.__name__)
+
         # import modules for initialize not initialized modules
         for package in packages:
             cls._import_module(f"{package}.{file_name}" if file_name else package)
@@ -105,21 +109,34 @@ class BaseDependencyManager(IDependencyManager[TScope, TInjector], Generic[TScop
         for scope in cls.__scopes__.values():
             scope.collect()
 
+        cls.__loaded__ = True
+
     @classmethod
-    def init(cls, globalize: bool | Iterable[ScopeNameType] = False):
+    def init(cls, globalize: bool | tuple[ScopeNameType] = False, reinit: bool = False):
         """Init dependency manager context.
 
         Args:
-            globalize: add all or certain scopes providers in global context for using providers without context managers
+            globalize: Add all or certain scopes providers in global context for using providers without context managers
+            reinit: Reinit manager context
 
         """
+        # if manager already inited, set value from cache
+        if cls.__inited__ and not reinit:
+            # if global scopes was changed, raise exception
+            if globalize != cls.__init_cache__["globalize"]:
+                raise DependencyManagerAlreadyInited(name=cls.__name__)
+
+            # set providers context from cache
+            cls.__context__.__init_context__({**cls.__init_cache__["providers"]})
+            return
+
         scopes = None
         # if globalize is True use all scopes as global
         if globalize is True:
             scopes = tuple(cls.__scopes__.keys())
         # if passed certain scopes use it
         elif globalize:
-            scopes = scopes
+            scopes = globalize
 
         providers = {}
         # if we have global scopes get scopes providers
@@ -129,9 +146,20 @@ class BaseDependencyManager(IDependencyManager[TScope, TInjector], Generic[TScop
         # initial context with provider dict
         cls.__context__.__init_context__(providers)
 
+        # set init state
+        cls.__inited__ = True
+        cls.__init_cache__ = InitCache(providers={**providers}, globalize=globalize)
+
     @classmethod
     def fork(cls, name: str | None = None) -> type[Self]:
-        """Make new class object with own context and scopes."""
+        """Make new class object with own context and scopes.
+
+        Args:
+            name: Name of new class, by default use "{cls.__name__}_{cls.__forks_count__}"
+
+        Returns: New DependencyManager class
+
+        """
         cls.__forks_count__ += 1
         name = name or f"{cls.__name__}_{cls.__forks_count__}"
         return type(cls)(name, (cls,), {"__module__": cls.__module__})
@@ -172,13 +200,27 @@ class BaseDependencyManager(IDependencyManager[TScope, TInjector], Generic[TScop
         providers: ProvidersType = {}
         # iter by passed scopes
         for scope in scopes:
-            # add included scopes providers which marked as export
-            for included in cls.__scopes__[scope].include:
-                external_providers = cls.__scopes__[included].external_providers
-                providers.update(external_providers)
+            # get current scope from cls scopes
+            scope_object = cls.__scopes__[scope]
 
-            # update providers from internal scope providers
-            providers.update(cls.__scopes__[scope].internal_providers)
+            # check resolve cache
+            if scope_object.__resolve_cache__ is not None:
+                providers.update(scope_object.__resolve_cache__)
+                continue
+
+            # container for scope providers
+            scope_resolve = {}
+            # add included scopes providers which marked as export
+            for included in scope_object.include:
+                external_providers = cls.__scopes__[included].external_providers
+                scope_resolve.update(external_providers)
+
+            # update scope providers from internal scope providers
+            scope_resolve.update(scope_object.internal_providers)
+
+            # set scope resolve cache
+            scope_object.__resolve_cache__ = scope_resolve
+            providers.update(scope_resolve)
 
         return providers
 
@@ -189,7 +231,6 @@ class BaseDependencyManager(IDependencyManager[TScope, TInjector], Generic[TScop
         provider: type[T],
         /,
         scope: ScopeNameType | None = None,
-        scopes: tuple[ScopeNameType, ...] = (),
         export: bool = False,
         interface: type | None = None,
     ) -> type[T]: ...
@@ -200,7 +241,6 @@ class BaseDependencyManager(IDependencyManager[TScope, TInjector], Generic[TScop
         provider: Callable[P, R],
         /,
         scope: ScopeNameType | None = None,
-        scopes: tuple[ScopeNameType, ...] = (),
         export: bool = False,
         interface: Callable[P, R] | None = None,
     ) -> Callable[P, R]: ...
@@ -210,7 +250,6 @@ class BaseDependencyManager(IDependencyManager[TScope, TInjector], Generic[TScop
         provider: type[T] | Callable[P, R],
         /,
         scope: ScopeNameType | None = None,
-        scopes: tuple[ScopeNameType, ...] = (),
         export: bool = False,
         interface: type | Callable[P, R] | None = None,
     ) -> type[T] | Callable[P, R]:
@@ -219,25 +258,21 @@ class BaseDependencyManager(IDependencyManager[TScope, TInjector], Generic[TScop
         Args:
             provider: Class or function object.
             scope: dependency storage scope
-            scopes: dependency storage scopes
             export: Export providers to other scopes.
             interface: Interface for mapping.
 
         Returns: Passed class or function object.
 
         """
-        # get scopes for iteration
-        _scopes = (scope,) if scope else scopes
-        for scope in _scopes:
-            # scope must be presented in the manager
-            if scope not in cls.__scopes__:
-                # otherwise raise exception
-                raise ScopeDoesNotExistsException(name=str(scope), manager=cls.__name__)
+        # scope must be presented in the manager
+        if scope not in cls.__scopes__:
+            # otherwise raise exception
+            raise ScopeDoesNotExistsException(name=str(scope), manager=cls.__name__)
 
-            # getting certain scope provider
-            scope_provide = cls.__scopes__[scope].provide
-            # pyright have some problems with nested overload
-            scope_provide(provider, export=export, interface=interface)  # pyright: ignore [reportArgumentType, reportCallIssue]
+        # getting certain scope provide method
+        scope_provide = cls.__scopes__[scope].provide
+        # pyright have some problems with nested overload
+        scope_provide(provider, export=export, interface=interface)  # pyright: ignore [reportArgumentType, reportCallIssue]
 
         return provider
 
@@ -292,18 +327,23 @@ class BaseDependencyManager(IDependencyManager[TScope, TInjector], Generic[TScop
         return cls.__injector_type__.create(providers, **kwargs)
 
     @classmethod
-    def execute_provider(cls, name: str):
+    def execute_provider(cls, name: str, scope: ScopeNameType | None = None):
         """Execute provider with given name and return result.
 
         Args:
             name: provider name
+            scope: provider scope name
 
         Returns: provider call result.
 
         """
         provider = cls.__context__.value.get(name)
-        if not provider:
-            raise ProviderDoesNotExistsInManagerContextException(name=name)
+
+        if provider is None and scope:
+            provider = cls.resolve(scope).get(name)
+
+        if provider is None:
+            raise ProviderDoesNotExistsInContextException(name=name, scope=str(scope) if scope else "")
         return provider()
 
 
