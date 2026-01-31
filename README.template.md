@@ -16,8 +16,8 @@
 <a href="https://pypi.python.org/pypi/dep-man-pydi" target="_blank">
     <img src="https://img.shields.io/pypi/v/dep-man-pydi.svg" alt="pypi">
 </a>
-<a href="https://pepy.tech/project/dep-man" target="_blank">
-    <img src="https://static.pepy.tech/badge/dep-man/month" alt="downloads">
+<a href="https://pepy.tech/project/dep-man-pydi" target="_blank">
+    <img src="https://static.pepy.tech/badge/dep-man-pydi/month" alt="downloads">
 </a>
 <a href="https://github.com/extralait-web/dep-man" target="_blank">
     <img src="https://img.shields.io/pypi/pyversions/dep-man-pydi.svg" alt="versions">

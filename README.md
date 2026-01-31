@@ -17,8 +17,8 @@
 <a href="https://pypi.python.org/pypi/dep-man-pydi" target="_blank">
     <img src="https://img.shields.io/pypi/v/dep-man-pydi.svg" alt="pypi">
 </a>
-<a href="https://pepy.tech/project/dep-man-pydi" target="_blank">
-    <img src="https://static.pepy.tech/badge/dep-man/month" alt="downloads">
+<a href="https://pepy.tech/project/dep-man" target="_blank">
+    <img src="https://static.pepy.tech/badge/dep-man-pydi/month" alt="downloads">
 </a>
 <a href="https://github.com/extralait-web/dep-man" target="_blank">
     <img src="https://img.shields.io/pypi/pyversions/dep-man-pydi.svg" alt="versions">
@@ -31,7 +31,7 @@
 
 # Installation
 
-Install using `pip install dep-man-pydi` or `uv add dep-man-pydi`
+Install using `pip install dep-man-pdi` or `uv add dep-man-pdi`
 
 # Features
 
@@ -165,6 +165,7 @@ with dm.inject("scope"):
     foo_instance.bar
     # ('bar_value', 'foo_value')
 
+
 # you can also use nested context managers
 with dm.inject("scope1"):
     with dm.inject("scope2"):
@@ -183,8 +184,6 @@ def injectable(arg: Depend[Foo] = BIND):
 
 # function call will be run with dm.inject("scope") context
 injectable()
-
-
 # ('foo_value', ('bar_value', 'foo_value'))
 
 
