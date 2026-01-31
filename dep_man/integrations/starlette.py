@@ -11,7 +11,7 @@ if TYPE_CHECKING:
 
 def get_starlette_middleware(
     manager: type[IDependencyManager],
-    globalize: bool | tuple[ScopeNameType] = False,
+    globalize: bool | tuple[ScopeNameType, ...] = False,
 ):
     """Return the dependency manager middleware for starlette or fastapi.
 

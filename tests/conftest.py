@@ -37,7 +37,7 @@ def with_manager(
     file_name: str | None = DEFAULT_DEPENDENCIES_FILE_NAME,
     reload: bool = False,
     init: bool = True,
-    globalize: bool | tuple[ScopeNameType] = False,
+    globalize: bool | tuple[ScopeNameType, ...] = False,
     reinit: bool = False,
 ):
     return pytest.mark.parametrize("manager", [[packages, file_name, reload, globalize, reinit, init]], indirect=True)

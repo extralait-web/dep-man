@@ -12,7 +12,7 @@ if TYPE_CHECKING:
 
 def get_django_middleware(
     manager: type[IDependencyManager],
-    globalize: bool | tuple[ScopeNameType] = False,
+    globalize: bool | tuple[ScopeNameType, ...] = False,
 ):
     """Return the dependency manager middleware for django.
 

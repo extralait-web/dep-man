@@ -22,7 +22,7 @@ class InitCache(TypedDict):
     """Cache of init method call."""
 
     providers: ProvidersType
-    globalize: bool | tuple[ScopeNameType]
+    globalize: bool | tuple[ScopeNameType, ...]
 
 
 class IDependencyManager(ABC, Generic[TScope, TInjector]):
@@ -65,7 +65,7 @@ class IDependencyManager(ABC, Generic[TScope, TInjector]):
 
     @classmethod
     @abstractmethod
-    def init(cls, globalize: bool | tuple[ScopeNameType] = False, reinit: bool = False):
+    def init(cls, globalize: bool | tuple[ScopeNameType, ...] = False, reinit: bool = False):
         """Init dependency manager context.
 
         Args:

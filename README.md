@@ -17,7 +17,7 @@
 <a href="https://pypi.python.org/pypi/dep-man-pydi" target="_blank">
     <img src="https://img.shields.io/pypi/v/dep-man-pydi.svg" alt="pypi">
 </a>
-<a href="https://pepy.tech/project/dep-man" target="_blank">
+<a href="https://pepy.tech/project/dep-man-pydi" target="_blank">
     <img src="https://static.pepy.tech/badge/dep-man-pydi/month" alt="downloads">
 </a>
 <a href="https://github.com/extralait-web/dep-man" target="_blank">
@@ -59,10 +59,9 @@ Install using `pip install dep-man-pdi` or `uv add dep-man-pdi`
 ```py
 # docs/examples/home/minimal/usage.py
 
-from typing import Awaitable
+from collections.abc import Awaitable
 
-from dep_man import dm
-from dep_man.types import BIND, Depend, FDepend
+from dep_man import BIND, Depend, FDepend, dm
 
 
 # declare function for providing in any file
@@ -100,11 +99,10 @@ scope.provide(foo)
 scope.provide(bar)
 scope.provide(Foo)
 
+# next you need specify modules for loading
+# if you have next structure
 """
-next you need specify modules for loading
-
-if you have next structure
---
+...
 ├── app
 └   ├── bar
     │   ├── ...
@@ -114,21 +112,27 @@ if you have next structure
         ├── ...
         ├── dependencies.py
         ├── __init__.py
-
-you need make next load call
-dm.load(
-    "core.bar",
-    "core.foo",
-)
-
-you can also specify file_name via load arg file_name
 """
+
+# you need make next load call
+dm.load("app.bar", "app.foo")
+
+# you can also specify file_name via load arg file_name
+dm.load("app.bar", "app.foo", file_name="your_file")
 
 # for django you need call this in ready method of you AppConfig
 dm.load()
 
+# at the beginning of the request you need call dm.init()
+# if you use starlette, fastapy or django you can use middleware
+from dep_man import get_django_middleware, get_starlette_middleware
+
 # this method you need call for every request in middleware
 dm.init()
+# you can use globalize=True for add providers from all scopes globally to dm context
+dm.init(globalize=True)
+# or add to global context only certain scopes
+dm.init(globalize=("notifications", "settings"))
 
 
 # use injector on class object
