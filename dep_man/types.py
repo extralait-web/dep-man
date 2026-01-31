@@ -1,5 +1,6 @@
 """Module types."""
 
+import sys
 from collections.abc import Callable
 from enum import Enum
 from typing import TYPE_CHECKING, Annotated, Any, TypeAlias
@@ -33,7 +34,10 @@ else:
 
         def __class_getitem__(cls, params):
             """Proxy call in Annotated.__class_getitem__ with special type in metadata."""
-            return Annotated.__class_getitem__((*params, __FDependType__))  # type: ignore
+            params = (*params, __FDependType__)
+            if sys.version_info < (3, 13):
+                return Annotated.__class_getitem__(params)  # type: ignore
+            return Annotated.__getitem__(params)
 
 
 class BIND:  # pyright: ignore [reportRedeclaration]
@@ -43,10 +47,8 @@ class BIND:  # pyright: ignore [reportRedeclaration]
 # We specify as Any for using BIND as function arg default value to avoid breaking type checking
 BIND: Any
 
-
 ScopeNameType: TypeAlias = str | Enum
 """Scope name type"""
-
 
 ProvidersType: TypeAlias = dict[str, type | Callable]
 """Provider container type alias"""
