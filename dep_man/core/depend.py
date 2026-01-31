@@ -1,19 +1,20 @@
 """Depend utils modules."""
 
 import inspect
-from collections.abc import Callable
 from typing import Any, overload
 
 from typing_extensions import Self
+
+from dep_man.types import PExecutor
 
 
 class DependValue:
     """Depend value. Return provider call result from context."""
 
-    __executor: Callable[[str], Any]
+    __executor: PExecutor
     """Dependency manager provider executor"""
 
-    def __init__(self, name: str, executor: Callable[[str], Any]):
+    def __init__(self, name: str, executor: PExecutor):
         """Set name of provider."""
         self.__executor = executor
         self.name = name
@@ -33,7 +34,7 @@ class DependParameter(inspect.Parameter):
 
     __default: Any = inspect.Parameter.empty
     """New default value attr"""
-    __executor: Callable[[str], Any]
+    __executor: PExecutor
     """Dependency manager provider executor"""
 
     def __init__(
@@ -43,24 +44,19 @@ class DependParameter(inspect.Parameter):
         *,
         default: Any = inspect.Parameter.empty,
         annotation: Any = inspect.Parameter.empty,
-        executor: Callable[[str], Any],
+        executor: PExecutor,
     ):
         """Set executor for depend."""
         self.__executor = executor
         super().__init__(name, kind, default=default, annotation=annotation)
 
     @property
-    def _default(self):
+    def _default(self) -> DependValue:
         return self.__default
 
     @_default.setter
-    def _default(self, value: str | DependValue):
-        if isinstance(value, DependValue):
-            value = DependValue(value.value, executor=self.__executor)
-        else:
-            value = DependValue(value, executor=self.__executor)
-
-        self.__default = value
+    def _default(self, value: str):
+        self.__default = DependValue(value, executor=self.__executor)
 
 
 class DependDescriptor(DependValue):

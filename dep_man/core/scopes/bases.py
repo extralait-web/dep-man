@@ -2,13 +2,14 @@
 
 from __future__ import annotations
 
+from functools import partial
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Any, overload
 
 from dep_man.core.exceptions import (
     DependencyAlreadyExistsException,
     InterfaceAlreadyExistsException,
-    InterfaceNameOverlapWithProvidersException,
+    InterfaceNameOverlapWithProviderException,
 )
 from dep_man.core.mocker import mock_provider
 from dep_man.core.schemas import Dependency
@@ -19,7 +20,7 @@ if TYPE_CHECKING:
 
     from typing_extensions import Self
 
-    from dep_man.types import ExecutorType, P, ProvidersType, R, ScopeNameType, T
+    from dep_man.types import P, PExecutor, ProvidersType, R, ScopeNameType, T
 
 
 class Scope(IScope):
@@ -36,7 +37,7 @@ class Scope(IScope):
         name: ScopeNameType,
         include: tuple[ScopeNameType, ...] = (),
         *,
-        __executor__: ExecutorType,
+        __executor__: PExecutor,
         **_kwargs: Any,
     ):
         """Create scope instance.
@@ -60,6 +61,7 @@ class Scope(IScope):
         self._kwargs = _kwargs
 
         self.__executor__ = __executor__
+        self.__resolve_cache__ = None
 
     @classmethod
     def create(
@@ -67,7 +69,7 @@ class Scope(IScope):
         name: ScopeNameType,
         include: tuple[ScopeNameType, ...] = (),
         *,
-        __executor__: ExecutorType,
+        __executor__: PExecutor,
         **_kwargs: Any,
     ) -> Self:
         """Create scope instance.
@@ -85,6 +87,11 @@ class Scope(IScope):
 
     def collect(self) -> None:  # pyright: ignore [reportIncompatibleMethodOverride]
         """Collect scope providers."""
+        # for reload case clear containers
+        self._internal_providers = {}
+        self._external_providers = {}
+        self.__resolve_cache__ = None
+
         # iter by _dependencies dict
         for name, dependency in self._dependencies.items():
             # add provider to internal providers
@@ -139,7 +146,7 @@ class Scope(IScope):
             # otherwise raise exception
             raise DependencyAlreadyExistsException(name=provider.__name__, scope=str(self.name))
 
-        mock_provider(provider, self.__executor__)
+        mock_provider(provider, partial(self.__executor__, scope=self.name))
 
         dependency = self._dependencies[provider.__name__] = Dependency(
             name=provider.__name__,
@@ -153,12 +160,12 @@ class Scope(IScope):
             # interface name must be unique in scope
             if interface.__name__ in self._interfaces:
                 # otherwise raise exception
-                InterfaceAlreadyExistsException(name=interface.__name__, scope=str(self.name))
+                raise InterfaceAlreadyExistsException(name=interface.__name__, scope=str(self.name))
 
             # dependency and interface names must not overlap
             if interface.__name__ in self._dependencies:
                 # otherwise raise exception
-                InterfaceNameOverlapWithProvidersException(name=interface.__name__, scope=str(self.name))
+                raise InterfaceNameOverlapWithProviderException(name=interface.__name__, scope=str(self.name))
 
             # add interface in manager scope
             self._interfaces[interface.__name__] = dependency
@@ -174,18 +181,3 @@ class Scope(IScope):
     def external_providers(self) -> MappingProxyType[str, type | Callable]:
         """External providers mapping."""
         return MappingProxyType(self._external_providers)
-
-    @property
-    def dependencies(self) -> MappingProxyType[str, Dependency]:
-        """Scope dependencies."""
-        return MappingProxyType(self._dependencies)
-
-    @property
-    def interfaces(self) -> MappingProxyType[str, Dependency]:
-        """Scope dependencies interfaces."""
-        return MappingProxyType(self._interfaces)
-
-    @property
-    def kwargs(self) -> MappingProxyType[str, Any]:
-        """Other kwargs."""
-        return MappingProxyType(self._kwargs)

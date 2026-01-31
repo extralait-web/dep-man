@@ -7,7 +7,7 @@ from collections.abc import Awaitable, Callable
 from typing import TYPE_CHECKING, Any
 
 from dep_man.core.depend import DependDescriptor, DependParameter, DependValue
-from dep_man.core.exceptions import FunctionProviderAlreadyMockedException
+from dep_man.core.exceptions import ProviderAlreadyProvidedException
 from dep_man.utils.annotations import get_signature_parameters_providers, parse_provider_name_from_annotation
 from dep_man.utils.builtins import copy_func
 from dep_man.utils.inspect import (
@@ -18,7 +18,7 @@ from dep_man.utils.inspect import (
 if TYPE_CHECKING:
     import types
 
-    from dep_man.types import ExecutorType
+    from dep_man.types import PExecutor
 
 
 def __get_proxy_provider_function_arguments(
@@ -174,7 +174,7 @@ def __make_proxy_provider_function(
     return __proxy_provider_function_copy
 
 
-def __replace_providers_parameters(signature: inspect.Signature, executor: ExecutorType) -> inspect.Signature:
+def __replace_providers_parameters(signature: inspect.Signature, executor: PExecutor) -> inspect.Signature:
     """Merge parameters with provider names.
 
     Args:
@@ -184,15 +184,20 @@ def __replace_providers_parameters(signature: inspect.Signature, executor: Execu
     Returns: new signature for original function
 
     """
+    # get params providers mapping
     providers = get_signature_parameters_providers(signature)
 
     parameters = []
+    # iter by signature params
     for name, parameter in signature.parameters.items():
         provider_name = providers.get(name)
+
+        # if not provider name add common signature parameter
         if not provider_name:
             parameters.append(parameter)
             continue
 
+        # otherwise add "depend" parameter with provider name as default value and executor
         parameters.append(
             DependParameter(
                 parameter.name,
@@ -203,10 +208,11 @@ def __replace_providers_parameters(signature: inspect.Signature, executor: Execu
             )
         )
 
-    return signature.replace(parameters=parameters, return_annotation=signature.return_annotation)
+    # create signature with new parameters
+    return signature.replace(parameters=parameters)
 
 
-def _mock_callable_provider(function: Callable | types.FunctionType, executor: ExecutorType):
+def _mock_callable_provider(function: Callable | types.FunctionType, executor: PExecutor):
     """Make provider function from callable object.
 
     Args:
@@ -218,7 +224,7 @@ def _mock_callable_provider(function: Callable | types.FunctionType, executor: E
     unwrapped = inspect.unwrap(function)
     # check if the function has been mock
     if getattr(unwrapped, "__mocked_provider__", None):
-        raise FunctionProviderAlreadyMockedException(name=unwrapped.__name__)
+        raise ProviderAlreadyProvidedException(name=unwrapped.__name__)
 
     # get original function signature
     signature = inspect.signature(unwrapped)
@@ -241,7 +247,7 @@ def _mock_callable_provider(function: Callable | types.FunctionType, executor: E
     unwrapped.__mocked_provider__ = True
 
 
-def _mock_class_provider(cls: type, executor: ExecutorType):
+def _mock_class_provider(cls: type, executor: PExecutor):
     """Make provider cls from class object.
 
     Args:
@@ -249,6 +255,10 @@ def _mock_class_provider(cls: type, executor: ExecutorType):
         executor: provider executor
 
     """
+    # check if the class has been mock
+    if cls.__dict__.get("__mocked_provider__", None):
+        raise ProviderAlreadyProvidedException(name=cls.__name__)
+
     providers = {}
     # iter by mro for collect all bases annotations
     for _cls in reversed(cls.__mro__):
@@ -277,8 +287,11 @@ def _mock_class_provider(cls: type, executor: ExecutorType):
         # call __set_name__ on descriptor because the descriptor is not set when the class is declared
         getattr(cls, attr).__set_name__(cls, attr)
 
+    # mark class as provided
+    cls.__mocked_provider__ = True
 
-def mock_provider(provider: type | Callable, executor: ExecutorType) -> None:
+
+def mock_provider(provider: type | Callable, executor: PExecutor) -> None:
     """Mock class or function provider.
 
     Args:

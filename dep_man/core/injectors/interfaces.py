@@ -10,14 +10,14 @@ from typing_extensions import Self
 if TYPE_CHECKING:
     from collections.abc import Callable
 
-    from dep_man.types import ExecutorType, P, ProvidersType, R
+    from dep_man.types import P, PExecutor, ProvidersType, R
     from dep_man.utils.contextvar import SimpleContext
 
 
 class IInjector(ABC):
     """Dependency injector interface."""
 
-    __executor__: ExecutorType
+    __executor__: PExecutor
     """Provider executor"""
     __context__: SimpleContext[ProvidersType]
     """Dependency manager context"""
@@ -54,7 +54,7 @@ class IInjector(ABC):
         cls,
         providers: dict[str, Callable | type] | None,
         *,
-        __executor__: ExecutorType,
+        __executor__: PExecutor,
         __context__: SimpleContext[ProvidersType],
     ) -> Self:
         """Create injector instance.

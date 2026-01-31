@@ -2,6 +2,7 @@
 
 import types
 from collections.abc import Callable
+from copy import copy
 
 
 def copy_func(function: types.FunctionType | Callable, name=None):
@@ -22,5 +23,7 @@ def copy_func(function: types.FunctionType | Callable, name=None):
         closure=function.__closure__,
     )
     # in case f was given attrs (note this dict is a shallow copy):
-    function_copy.__dict__.update(function.__dict__)
+    function_copy.__dict__ = function.__dict__
+    # copy __kwdefaults__
+    function_copy.__kwdefaults__ = copy(getattr(function, "__kwdefaults__", None))  # type: ignore
     return function_copy
