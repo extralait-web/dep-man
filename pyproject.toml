@@ -4,7 +4,7 @@ requires = ['hatchling', 'hatch-fancy-pypi-readme>=22.5.0']
 build-backend = 'hatchling.build'
 
 [project]
-name = "dep-man"
+name = "dep-man-pydi"
 description = 'Dep man is a dependency manager library with dependency injection implementation and future annotations supporting for avoiding circular imports.'
 requires-python = ">=3.10"
 authors = [
@@ -42,8 +42,10 @@ keywords = [
     "dependency",
     "injection",
     "inject",
+    "pydi",
     "provide",
     "dep-man",
+    "dep-man-pydi",
     "extralait",
 ]
 
@@ -91,6 +93,10 @@ path = 'dep_man/version.py'
 
 [tool.hatch.metadata]
 allow-direct-references = true
+
+[tool.hatch.build.targets.wheel]
+src = ""
+packages = ["dep_man"]
 
 [tool.hatch.build.targets.sdist]
 include = [

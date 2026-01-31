@@ -31,7 +31,7 @@
 
 # Installation
 
-Install using `pip install dep-man` or `uv add dep-man`
+Install using `pip install dep-man-pydi` or `uv add dep-man-pydi`
 
 # Features
 
@@ -165,7 +165,6 @@ with dm.inject("scope"):
     foo_instance.bar
     # ('bar_value', 'foo_value')
 
-
 # you can also use nested context managers
 with dm.inject("scope1"):
     with dm.inject("scope2"):
@@ -184,6 +183,8 @@ def injectable(arg: Depend[Foo] = BIND):
 
 # function call will be run with dm.inject("scope") context
 injectable()
+
+
 # ('foo_value', ('bar_value', 'foo_value'))
 
 
