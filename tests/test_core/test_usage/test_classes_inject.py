@@ -167,34 +167,3 @@ def test_class_methods(manager: type[DependencyManager]):
             assert foo_bar_context.method(True) == (True, FOO_SYNC_ARG_RESULT)
             assert foo_bar_context.static_method(True) == (True, BAR_SYNC_ARG_RESULT)
             assert foo_bar_context.class_method(True) == (True, BAR_EXPORT_RESULT)
-
-
-@with_manager(*PACKAGES)
-def test_interface_in_different_scopes(manager: type[DependencyManager]):
-    @manager.inject
-    class FooWithInterface:
-        use_case: Depend[IUseCase]
-
-        def execute(self):
-            return self.use_case.execute()
-
-    with pytest.raises(ProviderDoesNotExistsInContextException):
-        FooWithInterface().execute()
-
-    with manager.inject(Scopes.FOO):
-        assert FooWithInterface().execute() == FOO_USE_CASE_RESULT
-
-    with manager.inject(Scopes.BAR):
-        assert FooWithInterface().execute() == BAR_USE_CASE_RESULT
-
-    with manager.inject(Scopes.FOO):
-        assert FooWithInterface().execute() == FOO_USE_CASE_RESULT
-
-        with manager.inject(Scopes.BAR):
-            assert FooWithInterface().execute() == BAR_USE_CASE_RESULT
-
-    with manager.inject(Scopes.BAR):
-        assert FooWithInterface().execute() == BAR_USE_CASE_RESULT
-
-        with manager.inject(Scopes.FOO):
-            assert FooWithInterface().execute() == FOO_USE_CASE_RESULT

@@ -3,9 +3,14 @@ from collections.abc import Awaitable
 from dep_man import BIND, Depend, FDepend, dm
 
 
-# declare function for providing in any file
+# declare sync function
 def foo() -> str:
     return "foo_value"
+
+
+# declare async function
+async def async_foo() -> str:
+    return "async_foo_value"
 
 
 # declare function with dependence on foo
@@ -16,8 +21,14 @@ def bar(foo_value: FDepend[str, foo] = BIND) -> tuple[str, str]:
     return "bar_value", foo_value
 
 
+# declare interface
+class IFoo:
+    foo: bool
+    var: int
+
+
 # declare class with dependence on foo and bar
-class Foo:
+class Foo(IFoo):
     # in this case all fields with "Depend" of "FDepend" annotations
     # will be replaced with descriptor for getting value from context
     foo: FDepend[bool, foo]
@@ -29,14 +40,38 @@ class Foo:
     # inheritance providers is also supported
 
 
-# I recommend creating a new scope in the "dependencies.py" file
-# in the roots of your modules or applications,
-# and adding providers there as well
+# declare function for providing singleton result
+def singleton(arg: Depend[Foo] = BIND) -> Foo:
+    return arg
+
+
+# I recommend creating a new scopes and call provide methods
+# in the "dependencies.py" file in the roots of your modules or applications
+
+# as scope name you can use Enum or str
 scope = dm.add_scope("scope")
 # provide functions and classes
 scope.provide(foo)
+scope.provide(async_foo)
 scope.provide(bar)
-scope.provide(Foo)
+# provide Foo with interface, you can use Depend[Foo] or Depend[IFoo] for getting Foo instance
+scope.provide(Foo, interface=IFoo)
+# singleton result function
+
+# you can also provide object in certain scope using dm method
+dm.provide(singleton, scope="scope", singleton=True)
+
+
+# declare class with interface for other scope
+class OtherFoo(IFoo):
+    foo = False
+    bar = -1
+
+
+# create other scope
+other_scope = dm.add_scope("other_scope")
+# provide class in other scope with same interface
+other_scope.provide(OtherFoo, interface=IFoo)
 
 # next you need specify modules for loading
 # if you have next structure
@@ -74,12 +109,25 @@ dm.init(globalize=True)
 dm.init(globalize=("notifications", "settings"))
 
 
-# use injector on class object
+# if you use context of run dm.init(globalize=True)
+# you can create instance or call functions for any provider
+# without context manager usage
+foo_instance = Foo()  # <__main__.Foo object at ...>
+foo_instance.foo  # 'foo_value'
+foo_instance.bar  # ('bar_value', 'foo_value')
+
+# singleton function result
+singleton() is singleton()  # True
+
+
+# If you want to inject dependencies into a class that was not provided,
+# use need decorate this class with dm.inject as decorator
 @dm.inject
 class Injectable:
     # in this case all fields with "Depend" of "FDepend" annotations
     # will be replaced with descriptor for getting value from context
     foo: Depend[Foo]
+    foo_from_interface: Depend[IFoo]
 
 
 # usage example via context manager
@@ -88,59 +136,61 @@ with dm.inject("scope"):
     instance = Injectable()
 
     # Foo instance was created ones and set to instance.__dict__
-    instance.foo
-    # <__main__.Foo object at ...>
+    instance.foo  # <__main__.Foo object at ...>
+
+    instance.foo_from_interface  # <__main__.Foo object at ...>
 
     # foo call ones for getting result and set to instance.__dict__
-    instance.foo.foo
-    # foo_value
+    instance.foo.foo  # foo_value
 
     # bar call ones for getting result and set to instance.__dict__
     # inside the bar call foo was called once.
-    instance.foo.bar
-    # ('bar_value', 'foo_value')
-
-    # if you use context of run dm.init(globalize=True)
-    # you can create instance or call functions for any provider
-    foo_instance = Foo()
-    foo_instance.foo
-    # foo_value
-    foo_instance.bar
-    # ('bar_value', 'foo_value')
+    instance.foo.bar  # ('bar_value', 'foo_value')
 
 
 # you can also use nested context managers
-with dm.inject("scope1"):
-    with dm.inject("scope2"):
-        with dm.inject("scope3"):
-            pass
+with dm.inject("scope"):
+    instance = Injectable()
+    # In this context we will get the provider instance with interface=IFoo from the scope
+    isinstance(instance.foo_from_interface, Foo)  # True
+
+    with dm.inject("other_scope"):
+        instance = Injectable()
+        # In this context we will get the provider instance with interface=IFoo from the other_scope
+        isinstance(instance.foo_from_interface, OtherFoo)  # True
 
 
-# via function decoration
-# here you can specify scope or inject all if not specify
+# usage example via function decoration
+# here you can specify scopes or inject all if not specify
 @dm.inject("scope")
-def injectable(arg: Depend[Foo] = BIND):
+def injectable(common: bool, arg: Depend[Foo] = BIND):
     # in this case injectable __code__ will be replaced passing
     # providers via signature.parameters defaults values from context
-    return arg.foo, arg.bar
+    return common, arg.foo, arg.bar
 
 
 # function call will be run with dm.inject("scope") context
-injectable()
-# ('foo_value', ('bar_value', 'foo_value'))
+injectable(True)  # (True, 'foo_value', ('bar_value', 'foo_value'))
 
 
-# async support
+# async support logic of the injector's operation is similar
 @dm.inject
 class Foo:
-    async_arg: FDepend[Awaitable[bool], async_func]
+    # you can add async function result to you instances attrs
+    async_attr: FDepend[Awaitable[bool], async_foo]
 
 
-async with dm.inject("scope1"):
-    async with dm.inject("scope2"):
-        await Foo().async_arg
+# you can use async variant of context manager
+async with dm.inject("scope"):
+    async with dm.inject("other_scope"):
+        # you can get async function result from provider
+        await Foo().async_attr  # async_foo_value
 
 
+# you can use inject decorator on async function
 @dm.inject("scope")
-async def async_injectable(arg: FDepend[Awaitable[bool], async_func]):
-    return await arg
+async def async_injectable(common: bool, arg: FDepend[Awaitable[bool], async_foo] = BIND):
+    return common, await arg
+
+
+await async_injectable(common=True)  # (True, 'async_foo_value')

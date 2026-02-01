@@ -60,6 +60,7 @@ class IScope(ABC):
         provider: type[T],
         /,
         export: bool = False,
+        singleton: bool = False,
         interface: type | None = None,
     ) -> type[T]: ...
     @overload
@@ -69,6 +70,7 @@ class IScope(ABC):
         provider: Callable[P, R],
         /,
         export: bool = False,
+        singleton: bool = False,
         interface: Callable[P, R] | None = None,
     ) -> Callable[P, R]: ...
     @abstractmethod
@@ -77,6 +79,7 @@ class IScope(ABC):
         provider: type[T] | Callable[P, R],
         /,
         export: bool = False,
+        singleton: bool = False,
         interface: type | Callable[P, R] | None = None,
     ) -> type[T] | Callable[P, R]:
         """Provide function or cls object in scope.
@@ -84,6 +87,7 @@ class IScope(ABC):
         Args:
             provider: Class or function object.
             export: Export providers to other scopes.
+            singleton: Mark provider as singleton.
             interface: Interface for mapping.
 
         Returns: Passed class or function object.

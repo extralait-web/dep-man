@@ -20,6 +20,22 @@ async def foo_async_arg():
     return FOO_ASYNC_ARG_RESULT
 
 
+def foo_sync_not_singleton(arg: Depend[FooObjectArg] = BIND):
+    return arg
+
+
+def foo_sync_singleton(arg: Depend[FooObjectArg] = BIND):
+    return arg
+
+
+async def foo_async_not_singleton(arg: Depend[FooObjectArg] = BIND):
+    return arg
+
+
+async def foo_async_singleton(arg: Depend[FooObjectArg] = BIND):
+    return arg
+
+
 def foo_sync(
     common_arg: bool = False,
     sync_arg: FDepend[str, foo_sync_arg] = BIND,

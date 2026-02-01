@@ -11,4 +11,5 @@ class Dependency:
     name: str
     provider: type | Callable
     export: bool = False
+    singleton: bool = False
     interface: type | Callable | None = None

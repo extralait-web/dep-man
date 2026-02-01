@@ -34,24 +34,52 @@ Install using `pip install dep-man-pydi` or `uv add dep-man-pydi`
 
 # Features
 
-- [x] Annotation like providers injection
-- [x] Future annotation support
-- [x] Class instances injection
-- [x] Sync and Async function result injection
-- [x] Nested providers for inject in classes attrs and function args
-- [x] Classes providers inheritance
 - [x] ContextVar based injection
-- [x] Scopes with grouped providers
-- [x] Export providers in other scopes
-- [x] Interfaces and protocol based injection from different scopes
-- [x] Sync and Async context manager like injection
-- [x] Nested context managers usage
-- [x] Global context for avoiding context manager usage
-- [x] Decoration like scopes injection for functions
-- [x] Decoration like injection for classes
-- [x] Middlewares for django and starlette
-- [x] Multi DI managers supporting
-- [x] Supported custom DI managers, scopes and injectors classes
+- [x] Annotation like providers injection
+    - [x] String annotations support
+    - [x] ForwardRef annotations support
+    - [x] Future annotations support
+    - [x] Runtime annotations support
+- [x] Scopes support
+    - [x] Custom providers scopes
+    - [x] Interface based injection from different scopes
+    - [x] Multiple scopes context
+    - [x] Including other scopes external providers
+- [x] Context manager injection
+    - [x] Sync manager support
+    - [x] Async manager support
+    - [x] Nested context managers usage
+    - [x] Global context with optional immediate injection
+- [x] Classes support
+    - [x] Class instances injection
+    - [x] Class providers inheritance
+    - [x] Nested providers in classes attrs
+    - [x] Interface based class instance injection
+    - [x] Injection via context manager
+    - [x] Injection via global context
+    - [x] Mark as injectable via decorating
+    - [x] Sync function result attrs injection
+    - [x] Async function result attrs injection
+- [x] Functions support
+    - [x] Sync function result injection
+    - [x] Async function result injection
+    - [x] Nested providers in function args
+    - [x] Protocol based function result injection
+    - [x] Injection via context manager
+    - [x] Injection via global context
+    - [x] Injection via decorating
+- [x] Singleton supporting
+    - [x] App level singletons (including any functions results)
+    - [ ] Global context singleton support
+    - [ ] Current context singleton support
+- [x] Dependency manager
+    - [x] Multi DI managers supporting
+    - [x] Custom DI managers supporting
+    - [x] DI manager custom Scope type
+    - [x] DI manager custom Injector type
+- [x] Integrations
+    - [x] Django middleware
+    - [x] Starlet middleware (can use with FastAPI)
 
 # Examples
 

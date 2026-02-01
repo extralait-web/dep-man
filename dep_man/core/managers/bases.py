@@ -232,6 +232,7 @@ class BaseDependencyManager(IDependencyManager[TScope, TInjector], Generic[TScop
         /,
         scope: ScopeNameType | None = None,
         export: bool = False,
+        singleton: bool = False,
         interface: type | None = None,
     ) -> type[T]: ...
     @overload
@@ -242,6 +243,7 @@ class BaseDependencyManager(IDependencyManager[TScope, TInjector], Generic[TScop
         /,
         scope: ScopeNameType | None = None,
         export: bool = False,
+        singleton: bool = False,
         interface: Callable[P, R] | None = None,
     ) -> Callable[P, R]: ...
     @classmethod
@@ -251,6 +253,7 @@ class BaseDependencyManager(IDependencyManager[TScope, TInjector], Generic[TScop
         /,
         scope: ScopeNameType | None = None,
         export: bool = False,
+        singleton: bool = False,
         interface: type | Callable[P, R] | None = None,
     ) -> type[T] | Callable[P, R]:
         """Provide function or cls object.
@@ -259,6 +262,7 @@ class BaseDependencyManager(IDependencyManager[TScope, TInjector], Generic[TScop
             provider: Class or function object.
             scope: dependency storage scope
             export: Export providers to other scopes.
+            singleton: Mark provider as singleton.
             interface: Interface for mapping.
 
         Returns: Passed class or function object.
@@ -272,7 +276,7 @@ class BaseDependencyManager(IDependencyManager[TScope, TInjector], Generic[TScop
         # getting certain scope provide method
         scope_provide = cls.__scopes__[scope].provide
         # pyright have some problems with nested overload
-        scope_provide(provider, export=export, interface=interface)  # pyright: ignore [reportArgumentType, reportCallIssue]
+        scope_provide(provider, export=export, singleton=singleton, interface=interface)  # pyright: ignore [reportArgumentType, reportCallIssue]
 
         return provider
 

@@ -6,6 +6,8 @@ import inspect
 from collections.abc import Awaitable, Callable
 from typing import TYPE_CHECKING, Any
 
+from typing_extensions import TypedDict
+
 from dep_man.core.depend import DependDescriptor, DependParameter, DependValue
 from dep_man.core.exceptions import ProviderAlreadyProvidedException
 from dep_man.utils.annotations import get_signature_parameters_providers, parse_provider_name_from_annotation
@@ -19,6 +21,10 @@ if TYPE_CHECKING:
     import types
 
     from dep_man.types import PExecutor
+
+
+class _SingletonFunctionCache(TypedDict, total=False):
+    result: Any
 
 
 def __get_proxy_provider_function_arguments(
@@ -66,6 +72,8 @@ def __proxy_provider_function(
     *args,
     __proxy_provider_function_original: Callable,
     __proxy_provider_function_signature: inspect.Signature,
+    __proxy_provider_singleton: bool,
+    __proxy_provider_singleton_cache: _SingletonFunctionCache,
     **kwargs,
 ) -> Any:
     """Sync proxy provider function.
@@ -74,24 +82,36 @@ def __proxy_provider_function(
         *args: Any args for __proxy_provider_function_original
         __proxy_provider_function_original: bind from inserted signature parameter.default value
         __proxy_provider_function_signature: bind from inserted signature parameter.default value
+        __proxy_provider_singleton: mark provider as singleton
+        __proxy_provider_singleton_cache: provider singleton cache
         **kwargs: Any kwargs for __proxy_provider_function_original
 
     Returns: original function return type
 
     """
+    if __proxy_provider_singleton and "result" in __proxy_provider_singleton_cache:
+        return __proxy_provider_singleton_cache["result"]
+
     _args, _kwargs = __get_proxy_provider_function_arguments(
         *args,
         __proxy_provider_function_original=__proxy_provider_function_original,
         __proxy_provider_function_signature=__proxy_provider_function_signature,
         **kwargs,
     )
-    return __proxy_provider_function_original(*_args, **_kwargs)
+    result = __proxy_provider_function_original(*_args, **_kwargs)
+
+    if __proxy_provider_singleton:
+        __proxy_provider_singleton_cache["result"] = result
+
+    return result
 
 
 async def __async_proxy_provider_function(
     *args,
     __proxy_provider_function_original: Callable[..., Awaitable],
     __proxy_provider_function_signature: inspect.Signature,
+    __proxy_provider_singleton: bool,
+    __proxy_provider_singleton_cache: _SingletonFunctionCache,
     **kwargs,
 ) -> Any:
     """Async proxy provider function.
@@ -100,32 +120,47 @@ async def __async_proxy_provider_function(
         *args: Any args for __proxy_provider_function_original
         __proxy_provider_function_original: bind from inserted signature parameter.default value
         __proxy_provider_function_signature: bind from inserted signature parameter.default value
+        __proxy_provider_singleton: mark provider as singleton
+        __proxy_provider_singleton_cache: provider singleton cache
         **kwargs: Any kwargs for __proxy_provider_function_original
 
     Returns: original function return type
 
     """
+    # if function marked as singleton
+    if __proxy_provider_singleton and "result" in __proxy_provider_singleton_cache:
+        return __proxy_provider_singleton_cache["result"]
+
     _args, _kwargs = __get_proxy_provider_function_arguments(
         *args,
         __proxy_provider_function_original=__proxy_provider_function_original,
         __proxy_provider_function_signature=__proxy_provider_function_signature,
         **kwargs,
     )
-    return await __proxy_provider_function_original(*_args, **_kwargs)
+    result = await __proxy_provider_function_original(*_args, **_kwargs)
+
+    if __proxy_provider_singleton:
+        __proxy_provider_singleton_cache["result"] = result
+
+    return result
 
 
-def __make_proxy_provider_signature(function: types.FunctionType, signature: inspect.Signature):
+def __make_proxy_provider_signature(
+    function: types.FunctionType,
+    signature: inspect.Signature,
+    singleton: bool = False,
+):
     """Make proxy provider signature. Add __proxy_provider_function required parameters to signature.
 
     Args:
         function: function for calling in __proxy_provider_function
         signature: signature for __proxy_provider_function
+        singleton: mark provider as singleton
 
     Returns: New signature with proxy parameters
 
     """
-    return add_parameters(
-        signature,
+    parameters = [
         # original function parameter
         inspect.Parameter(
             name="__proxy_provider_function_original",
@@ -141,13 +176,30 @@ def __make_proxy_provider_signature(function: types.FunctionType, signature: ins
             default=signature,
             annotation=Callable,
         ),
-    )
+        # is singleton function
+        inspect.Parameter(
+            name="__proxy_provider_singleton",
+            kind=inspect.Parameter.KEYWORD_ONLY,
+            default=singleton,
+            annotation=bool,
+        ),
+        # singleton cache container
+        inspect.Parameter(
+            name="__proxy_provider_singleton_cache",
+            kind=inspect.Parameter.KEYWORD_ONLY,
+            default=_SingletonFunctionCache(),
+            annotation=dict,
+        ),
+    ]
+
+    return add_parameters(signature, *parameters)
 
 
 def __make_proxy_provider_function(
     function: types.FunctionType,
     signature: inspect.Signature,
     sync: bool = True,
+    singleton: bool = False,
 ):
     """Make proxy provider function. Make copy of __proxy_provider_function and change signature.
 
@@ -155,12 +207,13 @@ def __make_proxy_provider_function(
         function: function for calling in __proxy_provider_function
         signature: signature for __proxy_provider_function
         sync: use sync or async version of __proxy_provider_function
+        singleton: mark provider as singleton
 
     Returns: Copy of __proxy_provider_function
 
     """
     # add proxy params to signature
-    __proxy_provider_signature = __make_proxy_provider_signature(function, signature)
+    __proxy_provider_signature = __make_proxy_provider_signature(function, signature, singleton)
     # copy __proxy_provider_function
     if sync:
         # get sync function copy
@@ -212,12 +265,13 @@ def __replace_providers_parameters(signature: inspect.Signature, executor: PExec
     return signature.replace(parameters=parameters)
 
 
-def _mock_callable_provider(function: Callable | types.FunctionType, executor: PExecutor):
+def _mock_callable_provider(function: Callable | types.FunctionType, executor: PExecutor, singleton: bool = False):
     """Make provider function from callable object.
 
     Args:
         function: function for mocking
         executor: provider executor
+        singleton: mark provider as singleton
 
     """
     # get original function
@@ -233,10 +287,10 @@ def _mock_callable_provider(function: Callable | types.FunctionType, executor: P
     # make proxy provider function
     if inspect.iscoroutinefunction(unwrapped):
         # make async function
-        proxy_provider_function = __make_proxy_provider_function(unwrapped, signature, False)
+        proxy_provider_function = __make_proxy_provider_function(unwrapped, signature, sync=False, singleton=singleton)
     else:
         # make sync function
-        proxy_provider_function = __make_proxy_provider_function(unwrapped, signature, True)
+        proxy_provider_function = __make_proxy_provider_function(unwrapped, signature, sync=True, singleton=singleton)
     # change code of original function
     unwrapped.__code__ = proxy_provider_function.__code__
     # add in unwrapped globals variables from outer namespace for __(async)?proxy_provider_function
@@ -247,21 +301,48 @@ def _mock_callable_provider(function: Callable | types.FunctionType, executor: P
     unwrapped.__mocked_provider__ = True
 
 
-def _mock_class_provider(cls: type, executor: PExecutor):
+def _mock_class_provider(cls_: type, executor: PExecutor, singleton: bool = False):
     """Make provider cls from class object.
 
     Args:
-        cls: class object for mocking
+        cls_: class object for mocking
         executor: provider executor
+        singleton: mark provider as singleton
 
     """
     # check if the class has been mock
-    if cls.__dict__.get("__mocked_provider__", None):
-        raise ProviderAlreadyProvidedException(name=cls.__name__)
+    if cls_.__dict__.get("__mocked_provider__", None):
+        raise ProviderAlreadyProvidedException(name=cls_.__name__)
+
+    # if provider not mocked replace __new__ method for inheritance singleton support
+    # check attr for search attr in parent classes
+    if not getattr(cls_, "__mocked_provider__", None):
+        # get ref on old method
+        __old_new__ = cls_.__new__
+
+        # create new method
+        def __new_new__(cls, *args, **kwargs):
+            # check is cls provided as singleton
+            if cls.__dict__.get("__singleton_provider__"):
+                # try to get instance from cls __dict__
+                instance = cls.__dict__.get("__singleton_provider_instance__")
+                # if instance is not None, return value from cache
+                if instance is not None:
+                    return instance
+
+            # otherwise create new instance using old __new__ method
+            instance = __old_new__(cls, *args, **kwargs)  # type: ignore
+            # set instance cache in cls __dict__
+            cls.__singleton_provider_instance__ = instance
+            # return new instance
+            return instance
+
+        # replace new method
+        cls_.__new__ = __new_new__
 
     providers = {}
     # iter by mro for collect all bases annotations
-    for _cls in reversed(cls.__mro__):
+    for _cls in reversed(cls_.__mro__):
         _annotations = inspect.get_annotations(_cls)
         # iter by annotations
         for attr, annotation in _annotations.items():
@@ -277,29 +358,32 @@ def _mock_class_provider(cls: type, executor: PExecutor):
     # iter by providers attrs
     for attr, provider_name in providers.items():
         # if cls already have attr we need check provider name
-        if attr_value := getattr(cls, attr, None):
+        if attr_value := getattr(cls_, attr, None):
             # if providers names is same go tu next provider
             if isinstance(attr_value, DependDescriptor) and attr_value.name == provider_name:
                 continue
 
         # otherwise set new DependDescriptor to class
-        setattr(cls, attr, DependDescriptor(provider_name, executor=executor))
+        setattr(cls_, attr, DependDescriptor(provider_name, executor=executor))
         # call __set_name__ on descriptor because the descriptor is not set when the class is declared
-        getattr(cls, attr).__set_name__(cls, attr)
+        getattr(cls_, attr).__set_name__(cls_, attr)
 
     # mark class as provided
-    cls.__mocked_provider__ = True
+    cls_.__mocked_provider__ = True
+    cls_.__singleton_provider__ = singleton
+    cls_.__singleton_provider_instance__ = None
 
 
-def mock_provider(provider: type | Callable, executor: PExecutor) -> None:
+def mock_provider(provider: type | Callable, executor: PExecutor, singleton: bool = False) -> None:
     """Mock class or function provider.
 
     Args:
         provider: class or function for mocking
         executor: provider executor
+        singleton: mark provider as singleton
 
     """
     if isinstance(provider, type):
-        _mock_class_provider(provider, executor)
+        _mock_class_provider(provider, executor, singleton=singleton)
     else:
-        _mock_callable_provider(provider, executor)
+        _mock_callable_provider(provider, executor, singleton=singleton)
