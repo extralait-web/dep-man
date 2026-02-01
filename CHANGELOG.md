@@ -1,3 +1,7 @@
+# v0.2.0
+
+* Add permanent singletons supporting
+
 # v0.1.3
 
 * Fix root __all__
