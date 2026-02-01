@@ -5,6 +5,8 @@ from __future__ import annotations
 import inspect
 from typing import TYPE_CHECKING
 
+from dep_man.core.managers.utils import request_dependencies_context
+
 if TYPE_CHECKING:
     from dep_man.core.managers.interfaces import IDependencyManager
     from dep_man.types import ScopeNameType
@@ -32,8 +34,9 @@ def get_django_middleware(
             async def middleware(request):  # pyright: ignore [reportRedeclaration]
                 # init manager context
                 manager.init(globalize)
-                # return response
-                return await get_response(request)
+                # get current context value
+                with request_dependencies_context(manager):
+                    return await get_response(request)
 
         else:
             # sync view middleware
@@ -41,7 +44,8 @@ def get_django_middleware(
                 # init manager context
                 manager.init(globalize)
                 # return response
-                return get_response(request)
+                with request_dependencies_context(manager):
+                    return get_response(request)
 
         return middleware
 

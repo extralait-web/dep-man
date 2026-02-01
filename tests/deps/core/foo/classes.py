@@ -38,3 +38,9 @@ class FooNested:
 class FooUseCase(IUseCase):
     def execute(self):
         return FOO_USE_CASE_RESULT
+
+
+class FooSingleton: ...
+
+
+class FooNotSingleton: ...

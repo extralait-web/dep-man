@@ -112,6 +112,7 @@ class IDependencyManager(ABC, Generic[TScope, TInjector]):
         /,
         scope: ScopeNameType | None = None,
         export: bool = False,
+        singleton: bool = False,
         interface: type | None = None,
     ) -> type[T]: ...
     @overload
@@ -123,6 +124,7 @@ class IDependencyManager(ABC, Generic[TScope, TInjector]):
         /,
         scope: ScopeNameType | None = None,
         export: bool = False,
+        singleton: bool = False,
         interface: Callable[P, R] | None = None,
     ) -> Callable[P, R]: ...
     @classmethod
@@ -133,6 +135,7 @@ class IDependencyManager(ABC, Generic[TScope, TInjector]):
         /,
         scope: ScopeNameType | None = None,
         export: bool = False,
+        singleton: bool = False,
         interface: type | Callable[P, R] | None = None,
     ) -> type[T] | Callable[P, R]:
         """Provide function or cls object.
@@ -141,6 +144,7 @@ class IDependencyManager(ABC, Generic[TScope, TInjector]):
             provider: Class or function object.
             scope: dependency storage scope
             export: Export providers to other scopes.
+            singleton: Mark provider as singleton.
             interface: Interface for mapping.
 
         Returns: Passed class or function object.

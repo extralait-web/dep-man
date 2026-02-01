@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from dep_man.core.managers.utils import request_dependencies_context
+
 if TYPE_CHECKING:
     from dep_man.core.managers.interfaces import IDependencyManager
     from dep_man.types import ScopeNameType
@@ -30,6 +32,7 @@ def get_starlette_middleware(
             # init manager context
             manager.init(globalize)
             # return response
-            return await call_next(request)
+            with request_dependencies_context(manager):
+                return await call_next(request)
 
     return DependencyManagerMiddleware

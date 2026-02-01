@@ -5,7 +5,7 @@ build-backend = 'hatchling.build'
 
 [project]
 name = "dep-man-pydi"
-description = 'Dep man is a dependency manager library with dependency injection implementation and future annotations supporting for avoiding circular imports.'
+description = 'Dep man is a dependency manager library with dependency injection implementation and future annotations support for avoiding circular imports.'
 requires-python = ">=3.10"
 authors = [
     { name = 'Abbakumov Valerii', email = 'tehnolog1999@gmail.com' },

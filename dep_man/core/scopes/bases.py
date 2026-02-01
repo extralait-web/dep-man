@@ -114,6 +114,7 @@ class Scope(IScope):
         provider: type[T],
         /,
         export: bool = False,
+        singleton: bool = False,
         interface: type | None = None,
     ) -> type[T]: ...
     @overload
@@ -122,6 +123,7 @@ class Scope(IScope):
         provider: Callable[P, R],
         /,
         export: bool = False,
+        singleton: bool = False,
         interface: Callable[P, R] | None = None,
     ) -> Callable[P, R]: ...
     def provide(
@@ -129,6 +131,7 @@ class Scope(IScope):
         provider: type[T] | Callable[P, R],
         /,
         export: bool = False,
+        singleton: bool = False,
         interface: type | Callable[P, R] | None = None,
     ) -> type[T] | Callable[P, R]:
         """Provide function or cls object in scope.
@@ -136,6 +139,7 @@ class Scope(IScope):
         Args:
             provider: Class or function object.
             export: Export providers to other scopes.
+            singleton: Mark provider as singleton.
             interface: Interface for mapping.
 
         Returns: Passed class or function object.
@@ -146,13 +150,14 @@ class Scope(IScope):
             # otherwise raise exception
             raise DependencyAlreadyExistsException(name=provider.__name__, scope=str(self.name))
 
-        mock_provider(provider, partial(self.__executor__, scope=self.name))
+        mock_provider(provider, partial(self.__executor__, scope=self.name), singleton=singleton)
 
         dependency = self._dependencies[provider.__name__] = Dependency(
             name=provider.__name__,
             provider=provider,
             export=export,
             interface=interface,
+            singleton=singleton,
         )
 
         # if interface was passed try to add new interface
