@@ -80,7 +80,7 @@ Install using `pip install dep-man-pydi` or `uv add dep-man-pydi`
     - [x] DI manager custom Injector type
 - [x] Integrations
     - [x] Django middleware
-    - [x] Starlet middleware (can use with FastAPI)
+    - [x] Starlette middleware (can use with FastAPI)
 
 # Examples
 
