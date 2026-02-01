@@ -3,7 +3,7 @@
   <img src="docs/resources/brand.svg" width="100%" alt="Web SDK">
 </p>
 <p align="center">
-    <em>Dep man is a dependency manager library with dependency injection implementation and future annotations supporting for avoiding circular imports.</em>
+    <em>Dep man is a dependency manager library with dependency injection implementation and future annotations support for avoiding circular imports.</em>
 </p>
 
 <p align="center">
@@ -69,13 +69,13 @@ Install using `pip install dep-man-pydi` or `uv add dep-man-pydi`
     - [x] Injection via context manager
     - [x] Injection via global context
     - [x] Injection via decorating
-- [x] Singleton supporting
+- [x] Singleton support
     - [x] App level singletons (including any functions results)
     - [ ] Global context singleton support
     - [ ] Current context singleton support
 - [x] Dependency manager
-    - [x] Multi DI managers supporting
-    - [x] Custom DI managers supporting
+    - [x] Multi DI managers support
+    - [x] Custom DI managers support
     - [x] DI manager custom Scope type
     - [x] DI manager custom Injector type
 - [x] Integrations
